@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="$lang$">
   <head>
-    <title>$title$</title>
+    <title>$if(home)$$siteName$$else$$title$ | $siteName$$endif$</title>
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="$desc$">
+    <meta name="color-scheme" content="light dark">
     $if(author)$
     <meta name="author" content="$author$">
     $endif$
@@ -40,14 +41,134 @@
     <link rel="shortcut icon" href="/favicon.ico">
     <link rel="canonical" href="$root$$url$">
 
-    <link rel="alternate" href="./atom.xml" title="$feedTitle$" type="application/atom+xml">
-    <link rel="alternate" href="./rss.xml" title="$feedTitle$" type="application/rss+xml">
+    <link rel="alternate" href="/atom.xml" title="$feedTitle$" type="application/atom+xml">
+    <link rel="alternate" href="/rss.xml" title="$feedTitle$" type="application/rss+xml">
 
-    <link rel="stylesheet" href="./css/default.css" />
-    <link rel="stylesheet" href="./css/code.css" />
+    <script>
+      ;(function () {
+        var storedTheme = null;
+
+        try {
+          storedTheme = window.localStorage.getItem("theme");
+        } catch (error) {
+          storedTheme = null;
+        }
+
+        if (storedTheme !== "dark" && storedTheme !== "light") {
+          storedTheme = null;
+        }
+
+        var prefersDark = window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var theme = storedTheme || (prefersDark ? "dark" : "light");
+
+        var storedLanguage = null;
+
+        try {
+          storedLanguage = window.localStorage.getItem("language");
+        } catch (error) {
+          storedLanguage = null;
+        }
+
+        if (storedLanguage !== "zh-CN" && storedLanguage !== "en") {
+          storedLanguage = document.documentElement.lang || "zh-CN";
+        }
+
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.language = storedLanguage;
+        document.documentElement.lang = storedLanguage;
+      })();
+    </script>
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+
+    $if(mathjax)$
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["$$", "$$"], ["\\(", "\\)"]],
+          displayMath: [["$$$$", "$$$$"], ["\\[", "\\]"]],
+          processEscapes: true
+        },
+        options: {
+          skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+          ignoreHtmlClass: "tex2jax_ignore",
+          processHtmlClass: "math|tex2jax_process"
+        }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+    $endif$
+    $if(geogebra)$
+    <script defer src="https://www.geogebra.org/apps/deployggb.js"></script>
+    $endif$
+    $if(comments)$
+    <script>
+      window.__GISCUS_CONFIG__ = {
+        repo: "$giscusRepo$",
+        repoID: "$giscusRepoID$",
+        category: "$giscusCategory$",
+        categoryID: "$giscusCategoryID$",
+        mapping: "$giscusMapping$",
+        term: "$giscusTerm$",
+        strict: "$giscusStrict$",
+        reactionsEnabled: "$giscusReactionsEnabled$",
+        emitMetadata: "$giscusEmitMetadata$",
+        inputPosition: "$giscusInputPosition$",
+        language: "$lang$"
+      };
+    </script>
+    $endif$
   </head>
   <body>
+    <header class="site-header">
+      <a class="site-brand" href="/">
+        <span class="site-brand__title">$siteName$</span>
+        <span class="site-brand__subtitle">Memories</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="/" data-i18n-en="Home">首页</a>
+        <a href="/archives/" data-i18n-en="Archives">归档</a>
+        <a href="/tags/" data-i18n-en="Tags">标签</a>
+        <a href="/categories/" data-i18n-en="Categories">分类</a>
+        <a href="/about/" data-i18n-en="About">关于</a>
+        <a href="/whoami/" data-i18n-en="Whoami">我是谁</a>
+      </nav>
+      <div class="site-actions">
+        <div class="language-toggle" data-language-toggle aria-label="Switch language">
+          <button type="button" data-language-choice="zh-CN" aria-pressed="true">中</button>
+          <button type="button" data-language-choice="en" aria-pressed="false">EN</button>
+        </div>
+        <button
+          type="button"
+          class="theme-toggle"
+          data-theme-toggle
+          aria-label="Switch color theme"
+          aria-pressed="false"
+        >
+          <span class="theme-toggle__mark" aria-hidden="true"></span>
+          <span data-theme-toggle-label>深色</span>
+        </button>
+      </div>
+    </header>
     $body$
-    <script defer src="./js/script.js"></script>
+    $if(comments)$
+    <section class="comments" aria-label="Comments">
+      <div id="giscus-container" class="giscus"></div>
+    </section>
+    $endif$
+    <footer class="site-footer">
+      <div>
+        <strong>$siteName$</strong>
+        <span data-i18n-en="with Memos">与旧事同在</span>
+      </div>
+      <div class="site-footer__links">
+        <a href="/atom.xml">Atom</a>
+        <a href="/rss.xml">RSS</a>
+        <a href="https://github.com/LeoAlex0">GitHub</a>
+      </div>
+    </footer>
+    <script defer src="/js/script.js"></script>
   </body>
 </html>
