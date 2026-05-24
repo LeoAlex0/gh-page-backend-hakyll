@@ -1,29 +1,38 @@
 ---
-desc: "This is me saying hello to the world"
-image: "./images/robert-pearce-UwHN0jU_YqQ-unsplash-800w.jpg"
-lang: "en"
+desc: "有些东西不应该被遗忘，哪怕已经相隔很多年。"
+lang: "zh-CN"
 stylesheet: "default"
-title: "Hello, world!"
+title: "zLeoAlex's Blog"
 ---
 
-<header>
-  <h1>Hello, world!</h1>
-  <img
-    alt="A woman sitting on a bench amongst trees at the end of a boardwalk leading to a pond with mountains in the background"
-    src="./images/robert-pearce-UwHN0jU_YqQ-unsplash-800w.jpg"
-    height="300"
-  />
-</header>
-<main>
-  <section>
-    <h2>Blog Posts</h2>
-    <ul>
+<main class="layout-main home">
+  <section class="home-intro">
+    <p class="home-intro__eyebrow" data-i18n-en="Memories">记忆</p>
+    <h1>zLeoAlex's Blog</h1>
+    <p data-i18n-en="there are something should not be forgotten, though years apart.">有些东西不应该被遗忘，哪怕已经相隔很多年。</p>
+    <div class="home-intro__links">
+      <a href="/archives/" data-i18n-en="Archives">归档</a>
+      <a href="/tags/" data-i18n-en="Tags">标签</a>
+      <a href="/about/" data-i18n-en="About">关于</a>
+    </div>
+  </section>
+
+  <section class="home-posts">
+    <div class="section-heading">
+      <h2 data-i18n-en="Latest Posts">最近文章</h2>
+      <a href="/archives/" data-i18n-en="View all">查看全部</a>
+    </div>
+    <ol class="post-list">
       $for(posts)$
-        <li>
-          <div><a href=".$url$">$title$</a></div>
-          <small>$date$</small>
-        </li>
+      <li>
+        <a class="post-list__title" href="$url$">$title$</a>
+        <div class="post-list__meta">
+          <time>$date$</time>
+          <span>$categories$</span>
+          <span>$tags$</span>
+        </div>
+      </li>
       $endfor$
-    </ul>
+    </ol>
   </section>
 </main>
