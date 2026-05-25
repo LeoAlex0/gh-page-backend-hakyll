@@ -55,7 +55,6 @@ jobs:
         uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', 'flake.nix', 'cabal.project', 'ssg/ssg.cabal') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
           gc-max-store-size-linux: 4G
 
       - name: Build site
