@@ -1,0 +1,16 @@
+{
+  "files.associations": {
+    "*.geogebra": "json"
+  },
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "*.geogebra"
+      ],
+      "url": "./.vscode/geogebra.schema.json"
+    }
+  ],
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  }
+}

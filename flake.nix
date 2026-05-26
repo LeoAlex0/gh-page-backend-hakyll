@@ -77,7 +77,7 @@
           ) "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
           buildPhase = ''
-            ${flake.packages.${executable}}/bin/hakyll-site build --verbose
+            ${flake.packages.${executable}}/bin/hakyll-site build
           '';
 
           installPhase = ''

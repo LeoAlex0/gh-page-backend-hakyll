@@ -2,31 +2,62 @@ name: Build
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/main.yml"
+      - "flake.lock"
+      - "flake.nix"
+      - "cabal.project"
+      - "hie.yaml"
+      - "scripts/**"
+      - "src/**"
+      - "ssg/**"
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/main.yml"
+      - "flake.lock"
+      - "flake.nix"
+      - "cabal.project"
+      - "hie.yaml"
+      - "scripts/**"
+      - "src/**"
+      - "ssg/**"
   workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v30
+        uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
             allow-import-from-derivation = true
-            auto-optimise-store = true
+            cores = 0
             experimental-features = nix-command flakes
+            max-jobs = auto
             substituters = https://cache.nixos.org https://cache.iog.io
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
 
+      - name: Cache Nix builds
+        uses: DeterminateSystems/magic-nix-cache-action@v13
+        with:
+          diagnostic-endpoint: ""
+          use-flakehub: false
+
       - name: Build site
-        run: nix build .#website --accept-flake-config --print-build-logs
+        run: nix build .#website --no-link --accept-flake-config --print-build-logs
