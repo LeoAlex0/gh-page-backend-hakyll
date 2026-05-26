@@ -27,14 +27,13 @@
             "cas"
           ]
         },
-        "language": {
-          "type": "string",
-          "examples": [
-            "en",
-            "zh-CN"
-          ]
-        },
         "materialId": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "filename": {
           "type": "string"
         },
         "width": {

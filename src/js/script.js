@@ -352,6 +352,7 @@
       errorDialogsActive: optionBoolean(element, config, 'errorDialogsActive', false),
       enableLabelDrags: optionBoolean(element, config, 'enableLabelDrags', true),
       enableShiftDragZoom: optionBoolean(element, config, 'enableShiftDragZoom', true),
+      language: currentLanguage(),
       useBrowserForJS: true,
       appletOnLoad: function (api) {
         window.setTimeout(function () {
@@ -364,10 +365,6 @@
       parameters.material_id = optionValue(element, config, 'materialId', null);
     }
 
-    if (optionValue(element, config, 'language', null)) {
-      parameters.language = optionValue(element, config, 'language', null);
-    }
-
     if (optionValue(element, config, 'country', null)) {
       parameters.country = optionValue(element, config, 'country', null);
     }
@@ -378,6 +375,7 @@
 
     var applet = new window.GGBApplet(parameters, true);
     applet.inject(element.id);
+    element.dataset.geogebraLanguage = parameters.language;
   }
 
   function injectApplet(element) {
@@ -419,6 +417,31 @@
     }
 
     applets.forEach(injectApplet);
+  }
+
+  function updateGeoGebraLanguage(language) {
+    var shouldReload = false;
+    var applets = document.querySelectorAll('[data-geogebra]');
+
+    applets.forEach(function (element) {
+      if (
+        !element.dataset.geogebraLanguage ||
+        normalizeLanguage(element.dataset.geogebraLanguage) === language
+      ) {
+        return;
+      }
+
+      element.dataset.geogebraReady = 'false';
+      element.dataset.geogebraLoading = 'false';
+      element.dataset.geogebraLanguage = '';
+      element.classList.remove('is-ready');
+      element.textContent = '';
+      shouldReload = true;
+    });
+
+    if (shouldReload) {
+      initGeoGebra(0);
+    }
   }
 
   function giscusTheme(theme) {
@@ -583,6 +606,7 @@
     updateThemeToggle(currentTheme());
     updateCodeCopyButtons(nextLanguage);
     updateGiscusLanguage(nextLanguage);
+    updateGeoGebraLanguage(nextLanguage);
 
     if (shouldStore) {
       try {

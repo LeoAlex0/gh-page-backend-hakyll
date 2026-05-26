@@ -202,6 +202,8 @@ mathjax: true
 
 构建时会把独立成段的 `.geogebra` 链接转换成 GeoGebra applet。这样 VSCode Markdown Preview 会显示一个普通链接，不会尝试把 `.geogebra` 当作图片解码。
 
+GeoGebra 的界面语言由全站语言开关统一控制，不在 `.geogebra` 文件里单独声明。
+
 三维演示可以把 `appName` 设置为 `3d`，并在 `commands` 里使用 `Surface`、`Curve`、`Segment` 等三维对象命令。
 
 建议在 JSON 里使用 `Ellipse[A,B,4.2]` 这种方括号形式写英文命令，避免 GeoGebra 在中文界面下按本地化命令解析而报“未定义指令”。

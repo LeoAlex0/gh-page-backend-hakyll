@@ -1,9 +1,10 @@
 {
   "appName": "3d",
-  "language": "en",
   "height": 520,
   "animation": true,
-  "animationObjects": ["P"],
+  "animationObjects": [
+    "P"
+  ],
   "animationSpeed": 0.35,
   "commands": [
     "O=(0,0,0)",
