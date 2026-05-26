@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://leoalex0.github.io/schemas/geogebra.schema.json",
+  "title": "GeoGebra embed config",
+  "description": "Configuration loaded from .geogebra files by the blog frontend.",
+  "oneOf": [
+    {
+      "type": "array",
+      "title": "Command list",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "type": "object",
+      "title": "Applet config",
+      "additionalProperties": false,
+      "properties": {
+        "appName": {
+          "type": "string",
+          "default": "classic",
+          "examples": [
+            "classic",
+            "3d",
+            "geometry",
+            "graphing",
+            "cas"
+          ]
+        },
+        "language": {
+          "type": "string",
+          "examples": [
+            "en",
+            "zh-CN"
+          ]
+        },
+        "materialId": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 320
+        },
+        "height": {
+          "type": "number",
+          "minimum": 1,
+          "default": 460
+        },
+        "showToolBar": {
+          "type": "boolean",
+          "default": false
+        },
+        "showAlgebraInput": {
+          "type": "boolean",
+          "default": false
+        },
+        "showMenuBar": {
+          "type": "boolean",
+          "default": false
+        },
+        "errorDialogsActive": {
+          "type": "boolean",
+          "default": false
+        },
+        "enableLabelDrags": {
+          "type": "boolean",
+          "default": true
+        },
+        "enableShiftDragZoom": {
+          "type": "boolean",
+          "default": true
+        },
+        "animation": {
+          "type": "boolean",
+          "default": false
+        },
+        "animationObjects": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "default": "P"
+        },
+        "animationSpeed": {
+          "type": "number",
+          "default": 0.35
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "view": {
+          "$ref": "#/$defs/view"
+        },
+        "xMin": {
+          "type": "number"
+        },
+        "xMax": {
+          "type": "number"
+        },
+        "yMin": {
+          "type": "number"
+        },
+        "yMax": {
+          "type": "number"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "view": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "xMin": {
+          "type": "number"
+        },
+        "xMax": {
+          "type": "number"
+        },
+        "yMin": {
+          "type": "number"
+        },
+        "yMax": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}
