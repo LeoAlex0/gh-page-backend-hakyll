@@ -17,6 +17,10 @@ comments: true
 lang: en
 ---
 
+This article does three things: implement KMP in ten lines of Haskell, prove its correctness formally, then explain from the perspective of lazy evaluation why the "circular dependency" is viable.
+
+---
+
 ## The Prefix Function and KMP
 
 The string matching problem: given a pattern $pat$ and text $txt$, find all occurrences of $pat$ in $txt$. The naive approach compares character by character, and on a mismatch rewinds both the pattern and text pointers — $O(nm)$ worst case.
