@@ -9,6 +9,7 @@ import Control.Monad (forM_)
 import Hakyll
 import Site.Context (pageCtx, postCtx, siteCtx)
 import Site.Feed (feedCompiler)
+import Site.GeoGebra (geogebraAssetCompiler)
 import Site.Pandoc (pandocCompilerCustom)
 import Site.Routes (pageRoute, postAssetPattern, postAssetRoute, postRoute, primaryPostPattern, translatedPostPattern)
 
@@ -24,6 +25,10 @@ siteRules = do
   match "css/*" $ do
     route idRoute
     compile compressCssCompiler
+
+  match "posts/*/**.geogebra" $ do
+    route postAssetRoute
+    compile geogebraAssetCompiler
 
   match postAssetPattern $ do
     route postAssetRoute

@@ -8,7 +8,7 @@ tags:
   - 数据结构
 preview: 300
 date: 2020-05-20 00:23:53
-mathjax: true
+math: true
 comments: true
 ---
 <!-- # 洛谷-P1383 高级打字机 题解 -->

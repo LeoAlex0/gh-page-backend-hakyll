@@ -7,7 +7,7 @@ tags:
   - 数学
   - 齐次坐标
 preview: 220
-mathjax: true
+math: true
 geogebra: true
 date: 2021-04-30 21:09:12
 comments: true

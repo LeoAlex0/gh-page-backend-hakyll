@@ -147,15 +147,15 @@ src/posts/
 
 如果目录名带日期前缀，例如 `2026-05-22-sample-post`，发布时会自动去掉日期，得到 `/post/sample-post.html`。
 
-## MathJax
+## Math
 
-MathJax 默认不加载。需要数学公式的文章，在 front matter 中声明：
+MathJax 和 Mermaid 数学公式的 KaTeX 默认不加载。需要数学公式的文章，在 front matter 中声明：
 
 ```yaml
-mathjax: true
+math: true
 ```
 
-支持 `$...$`、`$$...$$`、`\(...\)` 和 `\[...\]`。没有声明 `mathjax: true` 的页面不会加载 MathJax 脚本，以减少前端开销。
+支持 `$...$`、`$$...$$`、`\(...\)` 和 `\[...\]`。没有声明 `math: true` 的页面不会加载 MathJax 脚本和 KaTeX 样式，以减少前端开销。
 
 ## GeoGebra
 
@@ -168,7 +168,7 @@ geogebra: true
 如果文章里也有数学公式，仍然需要额外声明：
 
 ```yaml
-mathjax: true
+math: true
 ```
 
 正文中使用普通 Markdown 链接语法引用同目录的 `.geogebra` 文件：

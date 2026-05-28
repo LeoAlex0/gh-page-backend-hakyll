@@ -112,6 +112,10 @@
     updateThemeToggle(nextTheme);
     updateGiscusTheme(nextTheme);
 
+    try {
+      document.dispatchEvent(new CustomEvent('themechange', { detail: { theme: nextTheme } }));
+    } catch (error) {}
+
     if (shouldStore) {
       try {
         window.localStorage.setItem(themeStorageKey, nextTheme);
@@ -825,6 +829,11 @@
 
     codeBlocks.forEach(function (code, index) {
       var pre = code.parentElement;
+
+      if (pre.classList.contains('mermaid')) {
+        return;
+      }
+
       var block = pre.parentElement && pre.parentElement.classList.contains('sourceCode')
         ? pre.parentElement
         : null;
@@ -844,6 +853,48 @@
     });
   }
 
+  function initMermaid() {
+    if (typeof window.mermaid === 'undefined') {
+      return;
+    }
+
+    var blocks = document.querySelectorAll('.mermaid');
+
+    if (!blocks.length) {
+      return;
+    }
+
+    var sources = [];
+
+    blocks.forEach(function (block) {
+      sources.push(block.textContent);
+    });
+
+    var currentTheme = function () {
+      return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default';
+    };
+
+    var render = function () {
+      blocks.forEach(function (block, i) {
+        block.innerHTML = sources[i];
+      });
+
+      window.mermaid.initialize({
+        startOnLoad: false,
+        theme: currentTheme(),
+        math: { enabled: true, forceLegacyMathML: true }
+      });
+
+      window.mermaid.run({ nodes: blocks }).catch(function (error) {
+        console.warn('Mermaid render failed:', error);
+      });
+    };
+
+    render();
+
+    document.addEventListener('themechange', render);
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       initThemeToggle();
@@ -851,6 +902,7 @@
       initGeoGebra(0);
       initGiscus();
       initCodeBlocks();
+      initMermaid();
     });
   } else {
     initThemeToggle();
@@ -858,5 +910,6 @@
     initGeoGebra(0);
     initGiscus();
     initCodeBlocks();
+    initMermaid();
   }
 })();

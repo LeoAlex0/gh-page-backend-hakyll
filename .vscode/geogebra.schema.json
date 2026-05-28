@@ -6,80 +6,97 @@
   "oneOf": [
     {
       "type": "array",
-      "title": "Command list",
+      "title": "命令列表",
+      "description": "GeoGebra 命令数组，按顺序执行。适用于简单的几何构造场景。",
       "items": {
-        "type": "string"
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "命令字符串（传统格式），如 \"A=Point({1,2})\""
+          },
+          {
+            "$ref": "#/$defs/command",
+            "description": "结构化命令对象。由 type 字段指定命令名，其余字段为参数。支持递归嵌套。"
+          }
+        ]
       }
     },
     {
       "type": "object",
-      "title": "Applet config",
+      "title": "小程序配置",
+      "description": "完整的 GeoGebra 小程序嵌入参数。所有字段均为可选，未指定时使用 GeoGebra 默认值。",
       "additionalProperties": false,
       "properties": {
         "appName": {
           "type": "string",
+          "description": "GeoGebra 应用类型。classic 包含全套工具，geometry 仅几何，graphing 仅函数绘图，3d 为三维模式，cas 为代数计算。",
           "default": "classic",
-          "examples": [
-            "classic",
-            "3d",
-            "geometry",
-            "graphing",
-            "cas"
-          ]
+          "examples": ["classic", "3d", "geometry", "graphing", "cas"]
         },
         "materialId": {
-          "type": "string"
-        },
-        "country": {
-          "type": "string"
+          "type": "string",
+          "description": "GeoGebra 官网素材 ID，用于加载已保存的在线课件。与 filename 互斥。"
         },
         "filename": {
-          "type": "string"
+          "type": "string",
+          "description": "要加载的 .ggb 文件路径。与 materialId 互斥。"
         },
         "width": {
           "type": "number",
+          "description": "小程序画布宽度（像素），最小 320。",
           "minimum": 320
         },
         "height": {
           "type": "number",
+          "description": "小程序画布高度（像素）。",
           "minimum": 1,
           "default": 460
         },
         "showToolBar": {
           "type": "boolean",
+          "description": "是否显示工具栏。",
           "default": false
         },
         "showAlgebraInput": {
           "type": "boolean",
+          "description": "是否显示代数输入栏。",
           "default": false
         },
         "showMenuBar": {
           "type": "boolean",
+          "description": "是否显示菜单栏。",
           "default": false
         },
         "errorDialogsActive": {
           "type": "boolean",
+          "description": "是否弹出错误提示对话框。",
           "default": false
         },
         "enableLabelDrags": {
           "type": "boolean",
+          "description": "是否允许拖拽标签文字。",
           "default": true
         },
         "enableShiftDragZoom": {
           "type": "boolean",
+          "description": "是否允许按住 Shift 拖拽缩放视图。",
           "default": true
         },
         "animation": {
           "type": "boolean",
+          "description": "加载后是否自动播放动画。",
           "default": false
         },
         "animationObjects": {
+          "description": "要执行动画的对象。可以是单个对象名或对象名数组，默认为 \"P\"（点 P）。",
           "oneOf": [
             {
-              "type": "string"
+              "type": "string",
+              "description": "单个对象名，如 \"P\"。"
             },
             {
               "type": "array",
+              "description": "对象名数组，如 [\"P\", \"Q\"]。",
               "items": {
                 "type": "string"
               }
@@ -89,50 +106,225 @@
         },
         "animationSpeed": {
           "type": "number",
+          "description": "动画播放速度，取值范围通常 0.05（极慢）到 5（极快），默认约 0.35。",
           "default": 0.35
         },
         "commands": {
           "type": "array",
+          "description": "加载后自动执行的 GeoGebra 命令列表。每条命令可以是传统字符串，也可以是带 type 字段的结构化对象。",
           "items": {
-            "type": "string"
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "命令字符串（传统格式），如 \"A=Point({1,2})\""
+              },
+              {
+                "$ref": "#/$defs/command",
+                "description": "结构化命令对象。由 type 字段指定命令名，其余字段为参数。支持递归嵌套。"
+              }
+            ]
           },
           "default": []
         },
         "view": {
-          "$ref": "#/$defs/view"
+          "$ref": "#/$defs/view",
+          "description": "视图范围配置，设置坐标轴可见区域。"
         },
         "xMin": {
-          "type": "number"
+          "type": "number",
+          "description": "x 轴最小值。若同时设置了 view，以 view 中的值为准。"
         },
         "xMax": {
-          "type": "number"
+          "type": "number",
+          "description": "x 轴最大值。若同时设置了 view，以 view 中的值为准。"
         },
         "yMin": {
-          "type": "number"
+          "type": "number",
+          "description": "y 轴最小值。若同时设置了 view，以 view 中的值为准。"
         },
         "yMax": {
-          "type": "number"
+          "type": "number",
+          "description": "y 轴最大值。若同时设置了 view，以 view 中的值为准。"
         }
       }
     }
   ],
   "$defs": {
+    "command": {
+      "description": "GeoGebra 结构化命令。通过 type 字段区分命令类型。",
+      "oneOf": [
+        {
+          "title": "赋值 =：将表达式绑定到变量",
+          "description": "如 A=Point({1,2})",
+          "type": "object",
+          "required": ["type", "var", "expr"],
+          "properties": {
+            "type": { "const": "=" },
+            "var": { "type": "string", "description": "变量名，如 A、B、c" },
+            "expr": { "$ref": "#/$defs/expression", "description": "赋值表达式" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "点 Point：由坐标 (x,y,z) 或所在对象 (on) 定义",
+          "description": "创建点。x/y 为二维坐标，加上 z 为三维坐标；on 指定点所在对象。",
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "Point" },
+            "x": { "type": "number", "description": "x 坐标" },
+            "y": { "type": "number", "description": "y 坐标" },
+            "z": { "type": "number", "description": "z 坐标（三维模式）" },
+            "on": { "type": "string", "description": "点所在对象名，如曲线 c" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "线段 Segment：连接 from 到 to 两点",
+          "description": "连接两点的线段。",
+          "type": "object",
+          "required": ["type", "from", "to"],
+          "properties": {
+            "type": { "const": "Segment" },
+            "from": { "$ref": "#/$defs/expression", "description": "起点" },
+            "to": { "$ref": "#/$defs/expression", "description": "终点" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "圆 Circle：指定圆心 center 和半径 radius",
+          "description": "以指定圆心和半径画圆。",
+          "type": "object",
+          "required": ["type", "center", "radius"],
+          "properties": {
+            "type": { "const": "Circle" },
+            "center": { "$ref": "#/$defs/expression", "description": "圆心" },
+            "radius": { "$ref": "#/$defs/expression", "description": "半径" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "椭圆 Ellipse：两焦点 focus1/focus2 与距离和 sum",
+          "description": "以两点为焦点、给定距离之和画椭圆。",
+          "type": "object",
+          "required": ["type", "focus1", "focus2", "sum"],
+          "properties": {
+            "type": { "const": "Ellipse" },
+            "focus1": { "$ref": "#/$defs/expression", "description": "焦点 1" },
+            "focus2": { "$ref": "#/$defs/expression", "description": "焦点 2" },
+            "sum": { "$ref": "#/$defs/expression", "description": "到两焦点距离之和" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "直线 Line：过 p1、p2 两点",
+          "description": "过两点的直线。",
+          "type": "object",
+          "required": ["type", "p1", "p2"],
+          "properties": {
+            "type": { "const": "Line" },
+            "p1": { "$ref": "#/$defs/expression", "description": "点 1" },
+            "p2": { "$ref": "#/$defs/expression", "description": "点 2" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "交点 Intersect：求对象 a 与 b 的交点",
+          "description": "求两个对象的交点。",
+          "type": "object",
+          "required": ["type", "a", "b"],
+          "properties": {
+            "type": { "const": "Intersect" },
+            "a": { "$ref": "#/$defs/expression", "description": "对象 1" },
+            "b": { "$ref": "#/$defs/expression", "description": "对象 2" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "多边形 Polygon：按 vertices 列表连接顶点",
+          "description": "依次连接顶点构成多边形。",
+          "type": "object",
+          "required": ["type", "vertices"],
+          "properties": {
+            "type": { "const": "Polygon" },
+            "vertices": {
+              "type": "array",
+              "description": "顶点列表，按顺序连接",
+              "items": { "$ref": "#/$defs/expression" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "参数曲线 Curve：exprX/Y/Z 参数方程",
+          "description": "以参数方程定义曲线，如 Curve(cos(t),sin(t),0,t,0,2*pi)。",
+          "type": "object",
+          "required": ["type", "exprX", "exprY", "var", "start", "end"],
+          "properties": {
+            "type": { "const": "Curve" },
+            "exprX": { "$ref": "#/$defs/expression", "description": "x 参数表达式" },
+            "exprY": { "$ref": "#/$defs/expression", "description": "y 参数表达式" },
+            "exprZ": { "$ref": "#/$defs/expression", "description": "z 参数表达式（可选，三维模式）" },
+            "var": { "type": "string", "description": "参数变量名，如 t" },
+            "start": { "$ref": "#/$defs/expression", "description": "参数起始值" },
+            "end": { "$ref": "#/$defs/expression", "description": "参数终止值" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "参数曲面 Surface：双参数曲面方程",
+          "description": "以双参数方程定义曲面。",
+          "type": "object",
+          "required": ["type", "exprX", "exprY", "exprZ", "var1", "start1", "end1", "var2", "start2", "end2"],
+          "properties": {
+            "type": { "const": "Surface" },
+            "exprX": { "$ref": "#/$defs/expression", "description": "x 参数表达式" },
+            "exprY": { "$ref": "#/$defs/expression", "description": "y 参数表达式" },
+            "exprZ": { "$ref": "#/$defs/expression", "description": "z 参数表达式" },
+            "var1": { "type": "string", "description": "第一参数变量名，如 u" },
+            "start1": { "$ref": "#/$defs/expression", "description": "第一参数起始值" },
+            "end1": { "$ref": "#/$defs/expression", "description": "第一参数终止值" },
+            "var2": { "type": "string", "description": "第二参数变量名，如 v" },
+            "start2": { "$ref": "#/$defs/expression", "description": "第二参数起始值" },
+            "end2": { "$ref": "#/$defs/expression", "description": "第二参数终止值" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "序列 Sequence：按变量范围生成表达式序列",
+          "description": "如 Sequence(Point({n,0}),n,1,10)。",
+          "type": "object",
+          "required": ["type", "expr", "var", "start", "end"],
+          "properties": {
+            "type": { "const": "Sequence" },
+            "expr": { "$ref": "#/$defs/expression", "description": "表达式" },
+            "var": { "type": "string", "description": "变量名，如 n" },
+            "start": { "$ref": "#/$defs/expression", "description": "变量起始值" },
+            "end": { "$ref": "#/$defs/expression", "description": "变量终止值" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "expression": {
+      "description": "表达式：数值、对象引用名、或嵌套命令。",
+      "oneOf": [
+        { "type": "number", "title": "数值" },
+        { "type": "string", "title": "对象引用名" },
+        { "$ref": "#/$defs/command", "title": "嵌套命令" }
+      ]
+    },
+
     "view": {
       "type": "object",
+      "description": "视图范围，指定坐标系的可视区域。",
       "additionalProperties": false,
       "properties": {
-        "xMin": {
-          "type": "number"
-        },
-        "xMax": {
-          "type": "number"
-        },
-        "yMin": {
-          "type": "number"
-        },
-        "yMax": {
-          "type": "number"
-        }
+        "xMin": { "type": "number", "description": "x 轴最小值（视口左边界）。" },
+        "xMax": { "type": "number", "description": "x 轴最大值（视口右边界）。" },
+        "yMin": { "type": "number", "description": "y 轴最小值（视口下边界）。" },
+        "yMax": { "type": "number", "description": "y 轴最大值（视口上边界）。" }
       }
     }
   }

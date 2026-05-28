@@ -9,7 +9,7 @@ tags:
   - 生成函数
 preview: 274
 date: 2020-06-27 21:34:50
-mathjax: true
+math: true
 comments: true
 ---
 

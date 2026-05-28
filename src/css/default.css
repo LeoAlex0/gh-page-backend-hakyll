@@ -577,6 +577,29 @@ mjx-container[display="true"] {
   padding: 0.4rem 0;
 }
 
+pre.mermaid {
+  overflow: visible;
+  border: none;
+  background: transparent;
+  line-height: inherit;
+  white-space: normal;
+}
+
+.mermaid .katex {
+  color: inherit;
+  font-size: 1em;
+}
+
+.mermaid-container {
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.mermaid svg,
+.mermaid svg * {
+  transition: none !important;
+}
+
 .geogebra-panel {
   margin: 2.4rem 0;
 }

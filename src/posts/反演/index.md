@@ -7,7 +7,7 @@ tags:
   - 数学
   - 反演
 preview: 300
-mathjax: true
+math: true
 date: 2020-06-11 16:10:11
 comments: true
 ---

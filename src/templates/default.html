@@ -83,7 +83,7 @@
     <link rel="stylesheet" href="/css/default.css">
     <link rel="stylesheet" href="/css/code.css">
 
-    $if(mathjax)$
+    $if(math)$
     <script>
       window.MathJax = {
         tex: {
@@ -102,6 +102,12 @@
     $endif$
     $if(geogebra)$
     <script defer src="https://www.geogebra.org/apps/deployggb.js"></script>
+    $endif$
+    $if(mermaid)$
+    $if(math)$
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+    $endif$
+    <script defer src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     $endif$
     $if(comments)$
     <script>

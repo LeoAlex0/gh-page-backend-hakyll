@@ -11,6 +11,8 @@
     }
   ],
   "[json]": {
-    "editor.defaultFormatter": "vscode.json-language-features"
-  }
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "prettier.printWidth": 120,
+  "prettier.tabWidth": 2
 }
