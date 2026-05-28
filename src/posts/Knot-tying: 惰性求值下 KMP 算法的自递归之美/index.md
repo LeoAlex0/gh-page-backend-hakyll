@@ -20,15 +20,15 @@ comments: true
 
 字符串匹配问题：给定模式串 $pat$ 和文本 $txt$，找出 $pat$ 在 $txt$ 中的所有出现位置。朴素做法逐字符比对，失配时模式串回退一位、文本指针也回退，最坏 $O(nm)$。
 
-**KMP 的核心洞察**：失配时文本指针不必回退。如果已经匹配了 $k$ 个字符，那么模式串的前 $k-1$ 个字符和文本中刚扫描过的部分是相同的。利用这部分重叠信息，可以将模式串向前滑动到下一个可能匹配的位置，而不需要重新扫描文本。
+**KMP 的核心思想**：失配时文本指针不必回退。如果已经匹配了 $k$ 个字符，那么模式串的前 $k-1$ 个字符和文本中刚扫描过的部分是相同的。利用这部分重叠信息，可以将模式串向前滑动到下一个可能匹配的位置，而不需要重新扫描文本。
 
-这个"重叠信息"就是**前缀函数** $\pi$。对模式串 $s[0..n-1]$，$\pi(i)$ 定义为：
+这个"重叠信息"就是**前缀函数** $\pi$。对模式串 $s[0:n]$（下标区间均为前闭后开 $[a,b)$），$\pi(i)$ 定义为：
 
 $$
-\pi(i) = \max_{k=0..i}\big\{\,k \;\big|\; s[0..k-1] = s[i-(k-1)..i] \,\big\}
+\pi(i) = \max_{k \in [0,i]}\big\{\,k \;\big|\; s[0:k] = s[i+1-k:i+1] \,\big\}
 $$
 
-也即 $\pi(i)$ 是 $s[0..i]$ 的最长**真前缀**同时也是**后缀**的长度。规定 $\pi(0)=0$。
+也即 $\pi(i)$ 是 $s[0:i+1]$ 的最长**真前缀**同时也是**后缀**的长度。规定 $\pi(0)=0$。
 
 例如模式串 `"aabaaab"` 的 $\pi$：
 
@@ -37,13 +37,11 @@ $$
 | $s[i]$ | a | a | b | a | a | a | b |
 | $\pi[i]$ | 0 | 1 | 0 | 1 | 2 | 2 | 3 |
 
-$\pi$ 的直观含义：$\pi(i)=k$ 意味着 $s[0..k-1]$ 和 $s[i-(k-1)..i]$ 完全相同。当在文本位置 $j$ 处 $s[k]$ 失配时，可以保持文本指针不动，将模式串状态**回退到** $\pi(k-1)$ 而不是 $0$——因为前 $\pi(k-1)$ 个字符已经在失配位置之前被隐式匹配过了。这就是 KMP 线性时间的来源。
+$\pi$ 的直观含义：$\pi(i)=k$ 意味着 $s[0:k]$ 和 $s[i+1-k:i+1]$ 完全相同。当在文本位置 $j$ 处 $s[k]$ 失配时，可以保持文本指针不动，将模式串状态**回退到** $\pi(k-1)$ 而不是 $0$——因为前 $\pi(k-1)$ 个字符已经在失配位置之前被隐式匹配过了。这就是 KMP 线性时间的来源。
 
 ---
 
-## Haskell 实现：先看代码
-
-只有三个函数。**直接可执行。**
+## Haskell 实现
 
 ```haskell
 import qualified Data.Array as A
@@ -62,7 +60,7 @@ prefix pat
   | otherwise  = pi
   where
     -- knot: pi 与 pat 同边界，扫描 step 自身得出
-    pi = A.listArray (A.bounds pat) (scanl (step pi pat) 0 (tail (A.elems pat)))
+    pi = A.listArray (A.bounds pat) (scanl (step pi pat) 0 (drop 1 (A.elems pat)))
 
 -- | KMP 匹配：prefix 算前缀函数，scanl 推进状态，any 检测命中。
 contains :: (Eq tok) => A.Array Int tok -> [tok] -> Bool
@@ -72,36 +70,34 @@ contains pat = any (== n) . scanl (step pi pat) 0
     n  = A.rangeSize (A.bounds pat)
 ```
 
-**这就是全部。** `step` 四行，`prefix` 四行，`contains` 三行。$\pi$ 直接复用 `pat` 的边界（`A.bounds pat`），无需单独声明长度变量 `n`——传统实现中到处散落的 `n = length pat`、`for i = 1 to n-1` 在此被 `scanl` + `tail` + `elems` 内化。
+`step` 四行，`prefix` 四行，`contains` 三行。$\pi$ 直接复用 `pat` 的边界（`A.bounds pat`），无需单独声明 $n$。传统实现中 `n = length pat`、`for i = 1 to n-1` 的模板代码被 `scanl` + `drop 1` + `elems` 取代。
 
 ---
 
-## 代码拆解
+## 代码分析
 
-### `step`：状态转移
-
-`step` 是唯一理解 KMP 状态转移逻辑的地方。它的签名是：
+### `step`
 
 ```haskell
 step :: Array Int Int → Array Int tok → Int → tok → Int
 ```
 
-三个数据入参——$\pi$（`pi`）、模式串（`pat`）、当前状态——加一个字符，返回新状态。命中则前进，失配则沿 $\pi$ 失败链回跳，到根则停止。
+$\pi$、模式串、当前状态 → 字符 → 新状态。命中则前进，失配则沿 $\pi$ 失败链回跳，到根则停止。
 
-关键设计：`step` **不拥有** $\pi$ 和模式串——它们都是显式入参。`prefix` 传入**正在构造中**的 $\pi$（knot），`contains` 传入**已经构造好**的 $\pi$（普通调用）。同一个 `step`，两种用法。
+`step` 不持有 $\pi$ 和模式串——二者均为显式入参。`prefix` 传入构造中的 $\pi$（knot），`contains` 传入已构造的 $\pi$（普通调用）。同一函数，两种用法。
 
-### `prefix`：以己为镜
+### `prefix`
 
 ```haskell
-pi = A.listArray (A.bounds pat) (scanl (step pi pat) 0 (tail (A.elems pat)))
+pi = A.listArray (A.bounds pat) (scanl (step pi pat) 0 (drop 1 (A.elems pat)))
 ```
 
-这一行包含两个动作：
+两个动作：
 
-1. `scanl` 从 $0$ 出发，将 `step pi pat` 顺序施加到 $pat[1..n-1]$ 上，产生 $\pi(0), \pi(1), \dots, \pi(n-1)$
-2. `pi` 同时作为 `step` 的入参——这就是 **knot**：$\pi$ 用 `step` 扫描自身来构造，`step` 又需要 $\pi$ 来做失败链回跳
+1. `scanl` 从 $0$ 开始，将 `step pi pat` 依次应用到 $pat[1..n-1]$，产生 $\pi(0),\pi(1),\dots,\pi(n-1)$
+2. `pi` 同时是 `step` 的入参——**knot**：$\pi$ 用 `step` 扫描自身来构造，`step` 又需要 $\pi$ 做失败链回跳
 
-注意 `pi` 直接复用 `pat` 的边界——`A.bounds pat` 决定了 `pi` 的长度，省去了手动计算和传递 `n` 的麻烦。
+`pi` 直接复用 `pat` 的边界——`A.bounds pat` 决定 `pi` 的长度，省去手动传递 $n$。
 
 ```mermaid
 flowchart TD
@@ -110,9 +106,9 @@ flowchart TD
     scanl -->|"施加"| step
 ```
 
-在严格语言中这是"用未完成的数据结构读取自身"，是悖论。在 Haskell 中，`Data.Array` 对 boxed 元素是惰性的：`scanl` 自左向右逐个产生 thunk，当 `step` 需要 $\pi(j-1)$ 时（$j-1 <$ 当前索引），该 thunk 已被 `scanl` 顺序强制过。
+在严格求值的语言（如 Rust、C++）中这是"用未完成的数据结构读取自身"，是悖论。在 Haskell 中，`Data.Array` 对 boxed 元素是惰性的：`scanl` 自左向右逐个产生 thunk，当 `step` 需要 $\pi(j-1)$ 时（$j-1 <$ 当前索引），该 thunk 已被 `scanl` 顺序强制过。
 
-### `contains`：扫描文本
+### `contains`
 
 ```haskell
 contains pat = any (== n) . scanl (step pi pat) 0
@@ -121,7 +117,7 @@ contains pat = any (== n) . scanl (step pi pat) 0
     n  = A.rangeSize (A.bounds pat)
 ```
 
-`scanl (step pi pat) 0` 将 `step pi pat` 作为状态机在文本上推进，生成状态序列；`any (== n)` 检查是否到达接受状态 $n$。`prefix` 提供 $\pi$。三者的数据流：
+`scanl (step pi pat) 0` 在文本上驱动状态机，生成状态序列；`any (== n)` 检测是否抵达接受状态 $n$。`prefix` 提供 $\pi$。三者数据流：
 
 ```mermaid
 flowchart LR
@@ -134,11 +130,11 @@ flowchart LR
 
 ## 正确性证明
 
-下面是严格的数学证明。我们定义三个数学对象——$\pi$、$\mathrm{step}$、$\{p_i\}$——然后证明 $\{p_i\}$ 恰好等于 $\{\pi(i)\}$。
+定义 $\pi$、$\mathrm{step}$、$\{p_i\}$，证 $\{p_i\} = \{\pi(i)\}$。
 
 ### 定义
 
-**定义 1（前缀函数）**　对字符串 $s[0:n]$（下标区间均为左闭右开 $[a,b)$），$\pi : \{0,\dots,n-1\} \to \mathbb{N}$：
+**定义 1（前缀函数）**　对字符串 $s[0:n]$（区间记号均为前闭后开 $[a,b)$），$\pi : \{0,\dots,n-1\} \to \mathbb{N}$：
 
 $$
 \pi(i) = \begin{cases}
@@ -176,7 +172,7 @@ $$
 
 **基始** $i = 0$：$p_0 = 0 = \pi(0)$。证毕
 
-**归纳步**　假设对所有 $k < i$ 已有 $p_k = \pi(k)$（强归纳）。令 $j = p_{i-1} = \pi(i-1)$。则 $p_i = \mathrm{step}(j, s[i])$。
+**归纳步**　假设对所有 $k < i$ 有 $p_k = \pi(k)$（强归纳）。令 $j = p_{i-1} = \pi(i-1)$，则 $p_i = \mathrm{step}(j, s[i])$。
 
 $\mathrm{step}$ 的定义有三条分支，按此展开讨论：
 
@@ -260,32 +256,123 @@ $$
 
 此时 $p_i = \mathrm{step}(j, s[i]) = \mathrm{step}(\pi(j-1), s[i])$。
 
-由 $s[j] \neq s[i]$ 及 $\pi(i-1)=j$：
-$$
-\pi(i) \le j \tag{2}
-$$
+**（i）证 $\pi(i) \le j$**　设 $k = \pi(i)$。若 $k = 0$，则 $k \le j$ 平凡。下设 $k \ge 1$：
 
-令 $k = \pi(i)$，$k \le j$。由 $\pi$ 定义：
 $$
 \begin{aligned}
-s[0:k] &= s[i+1-k:i+1] \\
-&\Downarrow \\
-s[0:k-1] &= s[i+1-k:i] && [\text{截末字符}] \\
-&= s[j+1-k:j] && [k \le j,\ \text{利用 } s[0:j]=s[i-j:i]] \\
-&\Downarrow \\
-k-1 &\in \{\,\ell \mid s[0:\ell] = s[j-\ell:j]\,\} \\
-s[k-1] &= s[i] && [\text{匹配末字符}]
+k = \pi(i)
+&\implies s[0:k] = s[i+1-k:i+1] && [\pi\text{ 定义}] \\
+&\implies s[0:k-1] = s[i+1-k:i] && [\text{截末字符}] \\
+&\implies \pi(i-1) \ge k-1 && [\pi\text{ 定义}] \\
+&\implies j \ge k-1 && [\pi(i-1)=j] \\
+&\implies k \le j+1 && \text{(1)}
 \end{aligned}
 $$
 
-因此：
+又：
+$$
+\begin{aligned}
+s[0:k] = s[i+1-k:i+1] &\implies s[k-1] = s[i] && [\text{末字符}] \\
+s[j] \neq s[i] &\implies k-1 \neq j && [\text{前提}] \\
+&\implies k \neq j+1 && \text{(2)}
+\end{aligned}
+$$
+
+由 (1)(2) 及 $k$ 为整数：$k \le j$，即 $\pi(i) \le j$。
+
+**（ii）将 $\pi(i)$ 用 $j$ 表示**　令 $k = \pi(i)$，$k \le j$：
+
+$$
+\begin{aligned}
+k = \pi(i)
+&\iff s[0:k] = s[i+1-k:i+1] && [\pi\text{ 定义}] \\
+&\iff s[0:k-1] = s[i+1-k:i]\;\wedge\; s[k-1] = s[i] && [\text{拆末字符}] \\
+&\iff s[0:k-1] = s[j+1-k:j]\;\wedge\; s[k-1] = s[i] && [\text{由 } s[0:j]=s[i-j:i]]
+\end{aligned}
+$$
+
+故：
+$$
+\pi(i) = \max\{\,k \mid s[0:k-1] = s[j+1-k:j],\; s[k-1] = s[i]\,\}
+$$
+
+令 $\ell = k-1$：
 $$
 \pi(i) = \max\{\,\ell+1 \mid s[0:\ell] = s[j-\ell:j],\; s[\ell] = s[i]\,\}
 $$
 
-（空集则 $0$。）这正是 $\mathrm{step}$ 沿 $\pi$ 链
-$\pi(j-1),\pi(\pi(j-1)-1),\dots,0$ 降序搜索的结果。
-由强归纳链上所有 $\pi$ 值正确，故 $\mathrm{step}(\pi(j-1), s[i]) = \pi(i)$。
+（空集则 $0$。）
+
+记该链为 $m_0 = \pi(j-1)$，$m_1 = \pi(m_0-1)$，…，$m_k = 0$。展开 $\mathrm{step}$ 的递归定义：
+
+$$
+\begin{aligned}
+\mathrm{step}(m_0, s[i])
+&= \begin{cases}
+m_0 + 1, & s[m_0] = s[i] \\
+\mathrm{step}(m_1, s[i]), & s[m_0] \neq s[i]
+\end{cases} \\
+\mathrm{step}(m_1, s[i])
+&= \begin{cases}
+m_1 + 1, & s[m_1] = s[i] \\
+\mathrm{step}(m_2, s[i]), & s[m_1] \neq s[i]
+\end{cases} \\
+&\;\;\vdots \\
+\mathrm{step}(m_k, s[i]) &= 0 \qquad (m_k = 0)
+\end{aligned}
+$$
+
+逐层代入得 $\mathrm{step}(m_0, s[i]) = m_t + 1$，其中 $t$ 是满足 $s[m_t] = s[i]$ 的最小下标（不存在则 $0$）。因 $m_0 > m_1 > \dots > m_k$，此 $m_t$ 是链中满足条件者的最大值，故：
+
+$$
+\mathrm{step}(\pi(j-1), s[i]) = \max\{\,\ell+1 \mid \ell \in \{\pi(j-1),\,\pi(\pi(j-1)-1),\,\dots,\,0\},\; s[\ell]=s[i]\,\}
+$$
+
+因此需确认该链等于 $\{\,\ell \mid s[0:\ell] = s[j-\ell:j]\,\}$。分两个方向证明该等式：
+
+$$
+\begin{aligned}
+\{\,\ell \mid s[0:\ell] = s[j-\ell:j]\,\} &\subseteq \{\pi(j-1),\,\pi(\pi(j-1)-1),\,\dots,\,0\} \\
+\{\,\ell \mid s[0:\ell] = s[j-\ell:j]\,\} &\supseteq \{\pi(j-1),\,\pi(\pi(j-1)-1),\,\dots,\,0\}
+\end{aligned}
+$$
+
+先证 $\supseteq$。对链上任一 $m_i$：
+
+$$
+\begin{aligned}
+m_i &= \pi(m_{i-1}-1) \\
+&\implies s[0:m_i] = s[m_{i-1}-m_i:m_{i-1}] && [\pi\text{ 定义}] \\
+&\implies s[0:m_i] = s[j-m_i:j] && [\text{代入 } s[0:m_{i-1}]=s[j-m_{i-1}:j]]
+\end{aligned}
+$$
+
+故 $m_i \in \{\,\ell \mid s[0:\ell] = s[j-\ell:j]\,\}$。
+
+再证 $\subseteq$。设 $\ell$ 满足 $s[0:\ell]=s[j-\ell:j]$，记 $m_0 = \pi(j-1)$。
+
+$$
+\begin{aligned}
+\ell &\le m_0 && [m_0 = \max\{\ell \mid s[0:\ell]=s[j-\ell:j]\}] \\
+\ell < m_t &\implies s[0:\ell] = s[m_t-\ell:m_t] && [s[0:m_t]=s[j-m_t:j],\ \ell<m_t] \\
+&\implies \ell \le \pi(m_t-1) = m_{t+1} && [\pi\text{ 定义}] \\
+&\implies \ell = m_{t+1} \lor \ell < m_{t+1}
+\end{aligned}
+$$
+
+由 $\pi(m_t-1) < m_t$ 知链 $m_0 > m_1 > m_2 > \dots > 0$ 严格递减，因此有限步内必有 $\ell = m_t$（对某 $t$）或 $\ell = 0$，即 $\ell \in \{m_0,m_1,\dots,0\}$。
+
+因此两集合相等：
+$$
+\{\,\ell \mid s[0:\ell] = s[j-\ell:j]\,\} = \{\pi(j-1),\,\pi(\pi(j-1)-1),\,\dots,\,0\}
+$$
+
+代入该等式：
+$$
+\mathrm{step}(\pi(j-1), s[i]) = \max\{\,\ell+1 \mid s[0:\ell]=s[j-\ell:j],\; s[\ell]=s[i]\,\}
+$$
+
+由强归纳，链上每个 $\pi$ 值均已得证，故 $\mathrm{step}(\pi(j-1), s[i]) = \pi(i)$。
 
 故 $p_i = \pi(i)$。证毕
 
@@ -295,28 +382,28 @@ $\pi(j-1),\pi(\pi(j-1)-1),\dots,0$ 降序搜索的结果。
 
 ---
 
-## 惰性求值：为什么这能工作
+## 惰性求值
 
-`prefix` 中出现了看似循环的依赖：`pi` 的定义引用了 `step pi pat`，而 `step` 的第三个参数就是 `pi` 自己。在大多数语言中，这行代码会立即崩溃——你无法使用一个尚未构造完成的数据结构。
+`prefix` 中出现了看似循环的依赖：`pi` 的定义引用了 `step pi pat`，而 `step` 的第三个参数正是 `pi` 自身。在大多数语言中，这行代码会立即崩溃——无法使用尚未构造完成的数据结构。
 
-要理解为什么 Haskell 可以，需要先理解**求值策略**的差异。
+原因在于**求值策略**的差异。
 
 ### 严格求值与惰性求值
 
-主流语言（Rust、C++、Java、Python 等）采用**严格求值**（strict evaluation，也称及早求值 eager evaluation）：函数调用前，所有参数必须已经计算为确定的值。先算出结果，再传入函数。
+主流语言（Rust、C++、Java、Python 等）采用**严格求值**（strict/eager evaluation）：函数调用前所有参数必须计算为确定的值。先算结果，再传参数。
 
-Haskell 采用**惰性求值**（lazy evaluation）：表达式只在**真正需要其结果**时才计算。函数参数在传入时并不求值，而是打包成一个**thunk**——一段"等需要时再算"的延迟计算。只有当某个操作必须知道 thunk 的实际值（比如模式匹配、输出到屏幕、做算术运算）时，运行时才会**强制**（force）这个 thunk，执行计算并将 thunk 替换为结果。
+Haskell 采用**惰性求值**（lazy evaluation）：表达式只在**结果被需要**时才计算。函数参数传入时并不求值，而是打包为一个**thunk**——"等需要时再算"的延迟计算。当某个操作需要 thunk 的实际值（如模式匹配、输出、算术运算）时，运行时才**强制**（force）这个 thunk，执行计算并替换为结果。
 
-### 什么是 spine？什么是 thunk？
+### spine 与 thunk
 
-以 `Data.Array` 为例。数组在内存中由两样东西组成：
+`Data.Array` 在内存中由两部分组成：
 
-- **spine**（骨架）：数组的索引结构和边界信息——"这是一个长度为 n 的数组"。
-- **元素**：每个槽位里放的具体值。
+- **spine**：索引结构与边界信息
+- **元素**：各槽位的值
 
-`A.listArray` 的行为是：**求值 spine**（骨架结构）以校验边界是否合法，但**保留元素为 thunk**——每个槽位里放一个尚未计算、仅类型正确的表达式。
+`A.listArray` **求值 spine**（校验边界合法性），但**保留元素为 thunk**——每个槽位放一个尚未计算的表达式。
 
-当 `scanl` 从左到右扫描模式串时，它依次产生 $\pi(0), \pi(1), \dots$。每个 $\pi(i)$ 都是一个 thunk，里面装着 `step pi pat` 应用到前一状态上的表达式。当 `step` 需要读取 $\pi(j-1)$ 时（$j-1 < i$），这个 thunk 已经被 `scanl` 在前面的迭代中强制过了——所以它已经是一个具体的整数，可以安全读取。
+`scanl` 从左到右扫描模式串时，依次产生 $\pi(0),\pi(1),\dots$。每个 $\pi(i)$ 是一个 thunk。当 `step` 需要 $\pi(j-1)$ 时（$j-1 < i$），该 thunk 已被 `scanl` 在前面的迭代中强制为具体整数。
 
 ```
 时间线（scanl 从左到右）：
@@ -327,24 +414,18 @@ Haskell 采用**惰性求值**（lazy evaluation）：表达式只在**真正需
   索引 i: 强制 thunkᵢ → step 需要 π(j-1)  ✓ j-1 < i，已就绪
 ```
 
-关键性质：**数据依赖的索引始终小于当前正在计算的索引**。这保证了计算图是**有向无环**的——不存在真正的前向引用，只是"引用自身数组的前缀"。惰性求值让这种自引用结构可以从左到右依次解开，每一步都只读取已经计算好的前缀。
+关键性质：**数据依赖索引始终小于当前计算索引**。故计算图是**有向无环**的——不存在前向引用，仅为"引用自身数组的前缀"。惰性求值让这种自引用结构可自左向右依次解开，每一步只读已计算部分。
 
-### 在其他语言中会怎样？
+### 严格求值语言的对比
 
-在严格求值的语言中，`A.listArray` 不仅要求值 spine，还要**立即求值所有元素**——数组构造器强制每个槽位在创建时就已就绪。这意味着构造 $\pi$ 的时刻，`scanl` 的每一步都要被立即计算，而第一步就需要访问 $\pi$（但 $\pi$ 还不存在），形成死锁。
+在严格求值的语言中，`A.listArray` 不仅求值 spine，还会**立即求值所有元素**——数组构造器要求各槽位在创建时即确定。构造 $\pi$ 时 `scanl` 第一步就需要访问 $\pi$（但 $\pi$ 还不存在），形成死锁。
 
-Rust / C++ 中的 KMP 必须用显式的两趟循环：第一趟计算部分信息，第二趟补全——或者用 `for` 循环手动维护状态，每一次迭代只访问已经写入的位置。这是将"拓扑排序"手工编码进程序里。
+Rust / C++ 的 KMP 必须用两趟循环，或手动维护状态、每次只访问已写入位置。这是手动编码"拓扑排序"。
 
-Haskell 的惰性数组让程序员可以**把拓扑排序交给运行时**——只要保证数据依赖是前向的（$j < i$），惰性求值就能自动串行化计算。这正是 knot-tying 的本质：**利用求值顺序的拓扑性质，将循环依赖转化为有向无环的计算图。**
+Haskell 的惰性数组将**拓扑排序交给运行时**——数据依赖前向（$j < i$）即可自动串行化。knot-tying 的本质：**利用求值顺序的拓扑性质，将循环依赖转化为有向无环计算图。**
 
 ---
 
 ## 结语
 
-```
-step     — 转移逻辑（pi 和模式串均为显式入参，四行）
-prefix   — 用 step 扫描自身，knot-tying 构造 pi（核心一行）
-contains — 用 prefix + scanl + any 匹配文本（三行核心）
-```
-
-KMP 的自引用结构——$\pi(i)$ 依赖 $\pi(j)$（$j < i$）——在惰性语言中不是需要绕过的障碍，而是可以直接写出来的程序文本。`step` 把"跟随失败链"抽象为纯函数，`prefix` 用 `scanl` 将同一函数同时用于构造和使用。这是函数式编程中"用数据流表达控制流"的一个精妙例证。
+KMP 的自引用结构——$\pi(i)$ 依赖 $\pi(j)$（$j < i$）——在惰性语言中不必绕开，可直接写为程序文本。`step` 将"跟随失败链"抽象为纯函数，`prefix` 用 `scanl` 将同一函数同时用于构造与使用。函数式编程"以数据流表达控制流"的一则例证。
